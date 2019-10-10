@@ -25,7 +25,7 @@ data("instacart")
 
 ```{r}
 instacart %>% 
-  group_by(aisle) %>% 
+  group_by(aisle, aisle_id) %>% 
   summarise(n = n()) %>% 
   arrange(desc(n))
 ```
@@ -52,5 +52,63 @@ instacart %>%
   group_by(aisle, product_name) %>% 
   summarize(n = n()) %>% 
   filter(min_rank(desc(n)) < 4 )
+```
+
+```{r}
+instacart %>% 
+  filter(product_name == c("Pink Lady Apples", "Coffee Ice Cream")) %>% 
+  group_by(product_name, order_dow) %>% 
+  summarize(
+    mean = mean(order_hour_of_day)
+  )
+```
+
+```{r}
+data("brfss_smart2010")
+```
+
+```{r}
+brfss = brfss_smart2010 %>% 
+  janitor::clean_names() %>% 
+  filter(topic == "Overall Health") %>% 
+  mutate(
+    response = ordered(response, c("Poor", "Fair", "Good", "Very good", "Excellent"))
+  )
+```
+
+```{r}
+brfss %>% 
+  filter(year == 2002) %>% 
+  group_by(locationabbr) %>% 
+  summarise(num = n_distinct(locationdesc)) %>% 
+  filter(num >= 7)
+```
+
+```{r}
+brfss %>% 
+  filter(year == 2010) %>% 
+  group_by(locationabbr) %>% 
+  summarise(num = n_distinct(locationdesc)) %>% 
+  filter(num >= 7)
+```
+
+
+```{r}
+brfss %>% 
+  filter(response == "Excellent") %>%
+  group_by(year, locationabbr) %>% 
+  summarise(meanvar = mean(data_value)) %>%
+   ggplot(aes(x = year, y = meanvar, group = locationabbr, color = locationabbr)) + 
+   geom_line()
+```
+
+```{r}
+brfss %>% 
+  filter(locationabbr == "NY", 
+         year == c("2006", "2010")) %>% 
+  ggplot(aes(x=response, y=data_value)) +
+  geom_violin(alpha=0.5) + 
+  geom_point() + 
+  facet_grid(~ year)
 ```
 
