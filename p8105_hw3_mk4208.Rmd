@@ -47,8 +47,8 @@ data("instacart")
   + `aisle`: the name of the aisle
   + `department`: the name of the department
 
-* The first obervation shows that User with User ID: **`r pull(instacart, user_id)[1]`** ordered **`r pull(instacart, product_name)[1]`** with the product ID: **`r pull(instacart, product_id)[1]`** from the **`r pull(instacart, aisle)[1]`** aisle of the **`r pull(instacart, department)[1]`** department.
-* The second obervation shows that User with User ID: **`r pull(instacart, user_id)[2]`** ordered **`r pull(instacart, product_name)[2]`** with the product ID: **`r pull(instacart, product_id)[2]`** from the **`r pull(instacart, aisle)[2]`** aisle of the **`r pull(instacart, department)[2]`** department.
+* The first observation shows that User with User ID: **`r pull(instacart, user_id)[1]`** ordered **`r pull(instacart, product_name)[1]`** with the product ID: **`r pull(instacart, product_id)[1]`** from the **`r pull(instacart, aisle)[1]`** aisle of the **`r pull(instacart, department)[1]`** department.
+* The second observation shows that User with User ID: **`r pull(instacart, user_id)[2]`** ordered **`r pull(instacart, product_name)[2]`** with the product ID: **`r pull(instacart, product_id)[2]`** from the **`r pull(instacart, aisle)[2]`** aisle of the **`r pull(instacart, department)[2]`** department.
 
 ------------------------------------------------
 
@@ -82,13 +82,14 @@ instacart %>%
     ) +
   coord_flip() + 
   theme_minimal() + 
-  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
-  theme(legend.position = "none") + 
+  ggtitle("Number of items ordered in each aisle\nwith more than 10,000 items ordered") + 
+  theme(legend.position = "none",
+        plot.title = element_text(hjust = 0.5),
+        axis.text.x = element_text(angle = 45, hjust = 1)) +
   labs(
     y = "Number of items", 
-    x = "Aisle Name", 
-    title = "Number of items ordered in each aisle with more than 10,000 items ordered"
-  )
+    x = "Aisle Name"
+  ) 
 ```
 
 ------------------------------------------------
