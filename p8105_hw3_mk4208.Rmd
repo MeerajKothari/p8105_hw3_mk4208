@@ -12,6 +12,7 @@ knitr::opts_chunk$set(echo = TRUE)
 ```{r}
 library(tidyverse)
 library(p8105.datasets)
+library(viridis)
 ```
 
 
@@ -23,12 +24,24 @@ Loading the Instacart dataset
 data("instacart") 
 ```
 
+# Here is a short description of the dataset: 
+* There are **`r nrow(instacart)` observations** and **`r ncol(instacart)` variables**.
+* It contains the following variables: **`r colnames(instacart)`**.
+
+------------------------------------------------
+
+There are **`r max(pull(instacart, aisle_id))`** aisles. The following table shows the aisles from which most number of items were ordered
+
 ```{r}
 instacart %>% 
   group_by(aisle, aisle_id) %>% 
   summarise(n = n()) %>% 
-  arrange(desc(n))
+  arrange(desc(n)) %>% 
+  head() %>%
+  knitr::kable()
 ```
+
+The following plot shows the number of items ordered in each aisle limited to aisles with more than 10000 items ordered
 
 ```{r}
 instacart %>% 
@@ -37,78 +50,184 @@ instacart %>%
   filter(n > 10000) %>% 
   arrange(desc(n)) %>% 
   ggplot(aes(x = reorder(aisle, n), y = n)) +
-  geom_bar(stat = "identity") + 
+  geom_point(alpha = 0.5) + 
   scale_y_continuous(
     breaks = seq(0, 160000, 10000),
     labels = function(x) format(x, big.mark = ",", scientific = FALSE)
     ) +
   coord_flip() + 
-  theme(axis.text.x = element_text(angle = 45, hjust = 1)) 
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  theme_minimal()
 ```
+
+The following table shows the three most popular items in each of the aisles: "baking ingredients", "dog food care" and "packaged vegetable fruits" including the number of times each item is ordered
 
 ```{r}
 instacart %>% 
-  filter(aisle == c("baking ingredients", "dog food care", "packaged vegetables fruits")) %>% 
+  filter(aisle %in% c("baking ingredients", "dog food care", "packaged vegetables fruits")) %>% 
   group_by(aisle, product_name) %>% 
-  summarize(n = n()) %>% 
-  filter(min_rank(desc(n)) < 4 )
+  summarize(n = n()) %>%
+  mutate(product_rank = min_rank(desc(n))) %>% 
+  filter(product_rank <= 3 ) %>%
+  arrange(aisle, product_rank)
+
 ```
+
+The following table shows the mean hour of the day at which Pink Lady Apples and Coffee Ice Cream are ordered on each day of the week 
 
 ```{r}
 instacart %>% 
-  filter(product_name == c("Pink Lady Apples", "Coffee Ice Cream")) %>% 
+  filter(product_name %in% c("Pink Lady Apples", "Coffee Ice Cream")) %>% 
   group_by(product_name, order_dow) %>% 
   summarize(
     mean = mean(order_hour_of_day)
+  ) %>% 
+  pivot_wider(
+    names_from = order_dow,
+    values_from = mean
   )
 ```
+
+Problem 2 
+
+Loading the BRFSS dataset 
 
 ```{r}
 data("brfss_smart2010")
 ```
 
+In the following code chunk, the dataset is formatted to use appropriate variable names. The dataset is filtered to focus on the "Overall Health" topic and includes responses only from "Excelled" to "Poor". The responses are organized as a factor taking levels ordered from "Poor" to "Excellent" 
+
 ```{r}
 brfss = brfss_smart2010 %>% 
   janitor::clean_names() %>% 
-  filter(topic == "Overall Health") %>% 
+  filter(topic %in% "Overall Health") %>% 
   mutate(
     response = ordered(response, c("Poor", "Fair", "Good", "Very good", "Excellent"))
   )
 ```
 
+The following table shows the states that were observed at 7 or more locations in 2002 
+
 ```{r}
 brfss %>% 
-  filter(year == 2002) %>% 
+  filter(year %in% 2002) %>% 
   group_by(locationabbr) %>% 
   summarise(num = n_distinct(locationdesc)) %>% 
   filter(num >= 7)
 ```
 
+The following table shows the states that were observed at 7 or more locations in 2010
+
 ```{r}
 brfss %>% 
-  filter(year == 2010) %>% 
+  filter(year %in% 2010) %>% 
   group_by(locationabbr) %>% 
   summarise(num = n_distinct(locationdesc)) %>% 
   filter(num >= 7)
 ```
 
+The following code chunk contructs a dataset limited to `Excellent` responses, and contains `year`, `state` and a variable `meanvar` that averages the `data_value` across locations within a state. 
 
 ```{r}
-brfss %>% 
-  filter(response == "Excellent") %>%
+excellent_data = brfss %>% 
+  filter(response %in% "Excellent") %>%
   group_by(year, locationabbr) %>% 
-  summarise(meanvar = mean(data_value)) %>%
-   ggplot(aes(x = year, y = meanvar, group = locationabbr, color = locationabbr)) + 
-   geom_line()
+  summarise(meanvar = mean(data_value)) 
+  
+head(excellent_data)
 ```
+
+The following code chunk creates a "spaghetti" plot of `meanvar` (average value) over time within a state. 
+
+```{r warning=FALSE}
+excellent_data %>% 
+   ggplot(aes(x = year, y = meanvar, group = locationabbr, color = locationabbr)) + 
+   geom_line() +  
+  viridis::scale_color_viridis(
+    name = "State", 
+    discrete = TRUE, 
+    option = "viridis"
+  ) + 
+  theme_minimal()
+```
+
+The following two-panel plot shows the distribution of `data_value` for responses ("Poor" to "Excellent") among locations in NY state 
 
 ```{r}
 brfss %>% 
-  filter(locationabbr == "NY", 
-         year == c("2006", "2010")) %>% 
-  ggplot(aes(x=response, y=data_value)) +
-  geom_violin(alpha=0.5) + 
+  filter(locationabbr %in% "NY", 
+         year %in% c("2006", "2010")) %>%
+  ggplot(aes(x = response, y = data_value, color = response)) +
+  geom_violin(alpha = 0.5) + 
   geom_point() + 
-  facet_grid(~ year)
+  facet_grid(~ year) + 
+  theme_minimal() 
+```
+
+Problem 3
+
+Loading and tidying the accelerometer data. A variable `day_type` has been included to indicate weekend vs weeday. 
+
+```{r}
+accel = read_csv("Data/accel_data.csv") %>% 
+  janitor::clean_names() %>% 
+  pivot_longer(
+    activity_1:activity_1440,
+    names_to = "minute", 
+    names_prefix = "activity_",
+    values_to = "activity") %>% 
+  mutate(day_type = if_else(
+  day %in% c("Saturday", "Sunday"),"weekend", "weekday"),
+  day_type = as.factor(day_type),
+  minute = as.numeric(minute),
+  activity = as.numeric(activity), 
+  minute = as.numeric(minute),
+  day = as.factor(day), 
+  week = as.factor(week),
+  day_id = as.numeric(day_id))
+
+head(accel)
+```
+
+# Here is a short description of the dataset: 
+* There are **`r nrow(accel)` observations** and **`r ncol(accel)` variables**.
+* It contains the following variables: **`r colnames(accel)`**.
+
+------------------------------------------------
+
+The following table shows `total_activity` for each day. Based on this table, it is difficult to detect a trend in the daily activity, however, we can see that Saturdays of Week 4 and 5 had the least activity
+
+```{r}
+accel %>% 
+  group_by(week, day) %>% 
+  summarise(
+    total_activity = sum(activity)
+  ) %>% 
+  knitr::kable()
+```
+
+The following single panel plot shows 24-hour activity time courses for each day. It is evident that there is high activity around 11th hour on Sunday and between 19th and 21st hour on Friday. The lowest activity is between 0 and 5th hour. 
+
+```{r}
+accel %>% 
+  mutate(hour = minute %/% 60) %>%
+  group_by(day, hour) %>%
+  summarise(
+    total_activity = sum(activity)
+  ) %>%
+  ggplot(aes(x = hour, y = total_activity, color = day)) + 
+    geom_line() + 
+    theme(legend.position = "bottom") + 
+  scale_x_continuous(breaks = c(0:24)) +
+  scale_y_continuous(
+    breaks = c(50000, 100000, 150000, 200000, 250000)
+  ) + 
+  theme_minimal() + 
+  viridis::scale_color_viridis(
+    name = "Day", 
+    discrete = TRUE, 
+    option = "viridis"
+  )
 ```
 
