@@ -9,14 +9,16 @@ output: github_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-```{r}
+Loading required packages
+
+```{r  message=FALSE}
 library(tidyverse)
 library(p8105.datasets)
 library(viridis)
 ```
 
 
-Problem 1
+# Problem 1
 
 Loading the Instacart dataset
 
@@ -24,22 +26,44 @@ Loading the Instacart dataset
 data("instacart") 
 ```
 
-# Here is a short description of the dataset: 
+### Here is a short description of the dataset: 
+“The Instacart Online Grocery Shopping Dataset 2017” is an anonymized dataset with over 3 million online grocery orders from more than 200,000 Instacart users.
+
 * There are **`r nrow(instacart)` observations** and **`r ncol(instacart)` variables**.
-* It contains the following variables: **`r colnames(instacart)`**.
+* It contains the following variables
+  + `order_id`: order identifier
+  + `product_id`: product identifier
+  + `add_to_cart_order`: order in which each product was added to cart
+  + `reordered`: 1 if this prodcut has been ordered by this user in the past, 0 otherwise
+  + `user_id`: customer identifier
+  + `eval_set`: which evaluation set this order belongs in (Note that the data for use in this class is exclusively from the “train” eval_set)
+  + `order_number`: the order sequence number for this user (1=first, n=nth)
+  + `order_dow`: the day of the week on which the order was placed
+  + `order_hour_of_day`: the hour of the day on which the order was placed
+  + `days_since_prior_order`: days since the last order, capped at 30, NA if order_number=1
+  + `product_name`: name of the product
+  + `aisle_id`: aisle identifier
+  + `department_id`: department identifier
+  + `aisle`: the name of the aisle
+  + `department`: the name of the department
+
+* The first obervation shows that User with User ID: **`r pull(instacart, user_id)[1]`** ordered **`r pull(instacart, product_name)[1]`** with the product ID: **`r pull(instacart, product_id)[1]`** from the **`r pull(instacart, aisle)[1]`** aisle of the **`r pull(instacart, department)[1]`** department.
+* The second obervation shows that User with User ID: **`r pull(instacart, user_id)[2]`** ordered **`r pull(instacart, product_name)[2]`** with the product ID: **`r pull(instacart, product_id)[2]`** from the **`r pull(instacart, aisle)[2]`** aisle of the **`r pull(instacart, department)[2]`** department.
 
 ------------------------------------------------
 
-There are **`r max(pull(instacart, aisle_id))`** aisles. The following table shows the aisles from which most number of items were ordered
+There are **`r max(pull(instacart, aisle_id))`** aisles. The followin g table shows the aisles from which most number of items were ordered:
 
 ```{r}
 instacart %>% 
   group_by(aisle, aisle_id) %>% 
   summarise(n = n()) %>% 
   arrange(desc(n)) %>% 
-  head() %>%
-  knitr::kable()
+  head(15) %>%
+  knitr::kable(col.names = c("Aisle", "Aisle ID", "Number of Items"))
 ```
+
+------------------------------------------------
 
 The following plot shows the number of items ordered in each aisle limited to aisles with more than 10000 items ordered
 
@@ -50,15 +74,24 @@ instacart %>%
   filter(n > 10000) %>% 
   arrange(desc(n)) %>% 
   ggplot(aes(x = reorder(aisle, n), y = n)) +
-  geom_point(alpha = 0.5) + 
+  geom_point(aes(color = n)) + 
+  scale_color_viridis_c(direction = -1) +
   scale_y_continuous(
     breaks = seq(0, 160000, 10000),
     labels = function(x) format(x, big.mark = ",", scientific = FALSE)
     ) +
   coord_flip() + 
+  theme_minimal() + 
   theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
-  theme_minimal()
+  theme(legend.position = "none") + 
+  labs(
+    y = "Number of items", 
+    x = "Aisle Name", 
+    title = "Number of items ordered in each aisle with more than 10,000 items ordered"
+  )
 ```
+
+------------------------------------------------
 
 The following table shows the three most popular items in each of the aisles: "baking ingredients", "dog food care" and "packaged vegetable fruits" including the number of times each item is ordered
 
@@ -69,26 +102,29 @@ instacart %>%
   summarize(n = n()) %>%
   mutate(product_rank = min_rank(desc(n))) %>% 
   filter(product_rank <= 3 ) %>%
-  arrange(aisle, product_rank)
-
+  arrange(aisle, product_rank) %>% 
+  knitr::kable(col.names = c("Aisle", "Product Name", "Number of Times", "Product Rank"))
 ```
+
+------------------------------------------------
 
 The following table shows the mean hour of the day at which Pink Lady Apples and Coffee Ice Cream are ordered on each day of the week 
 
 ```{r}
 instacart %>% 
   filter(product_name %in% c("Pink Lady Apples", "Coffee Ice Cream")) %>% 
-  group_by(product_name, order_dow) %>% 
+  group_by(product_name, order_dow) %>%
   summarize(
     mean = mean(order_hour_of_day)
   ) %>% 
   pivot_wider(
     names_from = order_dow,
     values_from = mean
-  )
+  ) %>% 
+  knitr::kable(col.names = c("Product Name", "0", "1", "2", "3", "4", "5", "6"))
 ```
 
-Problem 2 
+# Problem 2 
 
 Loading the BRFSS dataset 
 
@@ -96,7 +132,7 @@ Loading the BRFSS dataset
 data("brfss_smart2010")
 ```
 
-In the following code chunk, the dataset is formatted to use appropriate variable names. The dataset is filtered to focus on the "Overall Health" topic and includes responses only from "Excelled" to "Poor". The responses are organized as a factor taking levels ordered from "Poor" to "Excellent" 
+In the following code chunk, the dataset is formatted to use appropriate variable names. The dataset is filtered to focus on the "Overall Health" topic and includes responses only from "Excellent" to "Poor". The responses are organized as a factor taking levels ordered from "Poor" to "Excellent" 
 
 ```{r}
 brfss = brfss_smart2010 %>% 
@@ -105,7 +141,11 @@ brfss = brfss_smart2010 %>%
   mutate(
     response = ordered(response, c("Poor", "Fair", "Good", "Very good", "Excellent"))
   )
+
+head(brfss)
 ```
+
+------------------------------------------------
 
 The following table shows the states that were observed at 7 or more locations in 2002 
 
@@ -114,8 +154,11 @@ brfss %>%
   filter(year %in% 2002) %>% 
   group_by(locationabbr) %>% 
   summarise(num = n_distinct(locationdesc)) %>% 
-  filter(num >= 7)
+  filter(num >= 7) %>% 
+  knitr::kable(col.names = c("State", "Locations"))
 ```
+
+------------------------------------------------
 
 The following table shows the states that were observed at 7 or more locations in 2010
 
@@ -124,8 +167,11 @@ brfss %>%
   filter(year %in% 2010) %>% 
   group_by(locationabbr) %>% 
   summarise(num = n_distinct(locationdesc)) %>% 
-  filter(num >= 7)
+  filter(num >= 7) %>%
+  knitr::kable(col.names = c("State", "Locations"))
 ```
+
+------------------------------------------------
 
 The following code chunk contructs a dataset limited to `Excellent` responses, and contains `year`, `state` and a variable `meanvar` that averages the `data_value` across locations within a state. 
 
@@ -135,10 +181,12 @@ excellent_data = brfss %>%
   group_by(year, locationabbr) %>% 
   summarise(meanvar = mean(data_value)) 
   
-head(excellent_data)
+head(excellent_data) 
 ```
 
-The following code chunk creates a "spaghetti" plot of `meanvar` (average value) over time within a state. 
+------------------------------------------------
+
+The following code chunk creates a "spaghetti" plot of `meanvar` (average value) over time within each state. 
 
 ```{r warning=FALSE}
 excellent_data %>% 
@@ -149,8 +197,15 @@ excellent_data %>%
     discrete = TRUE, 
     option = "viridis"
   ) + 
-  theme_minimal()
+  theme_minimal() +
+  labs(
+    x = "Year",
+    y = "Mean", 
+    title = "Average value over time for each state"
+  )
 ```
+
+------------------------------------------------
 
 The following two-panel plot shows the distribution of `data_value` for responses ("Poor" to "Excellent") among locations in NY state 
 
@@ -160,16 +215,26 @@ brfss %>%
          year %in% c("2006", "2010")) %>%
   ggplot(aes(x = response, y = data_value, color = response)) +
   geom_violin(alpha = 0.5) + 
-  geom_point() + 
+  stat_summary(fun.y = median, geom = "point") +
   facet_grid(~ year) + 
-  theme_minimal() 
+  labs(
+    x = "Response", 
+    y = "Data Value", 
+    title = "Distribution of Data Value for responses ('Poor' to 'Excellent') in New York State") + 
+   viridis::scale_color_viridis(
+    name = "Response", 
+    discrete = TRUE, 
+    option = "viridis"
+  ) + 
+  theme_minimal() + 
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) 
 ```
 
-Problem 3
+# Problem 3
 
 Loading and tidying the accelerometer data. A variable `day_type` has been included to indicate weekend vs weeday. 
 
-```{r}
+```{r message=FALSE}
 accel = read_csv("Data/accel_data.csv") %>% 
   janitor::clean_names() %>% 
   pivot_longer(
@@ -187,10 +252,10 @@ accel = read_csv("Data/accel_data.csv") %>%
   week = as.factor(week),
   day_id = as.numeric(day_id))
 
-head(accel)
+head(accel) 
 ```
 
-# Here is a short description of the dataset: 
+### Here is a short description of the dataset: 
 * There are **`r nrow(accel)` observations** and **`r ncol(accel)` variables**.
 * It contains the following variables: **`r colnames(accel)`**.
 
@@ -204,8 +269,10 @@ accel %>%
   summarise(
     total_activity = sum(activity)
   ) %>% 
-  knitr::kable()
+  knitr::kable(col.names = c("Week", "Day", "Total Activity"))
 ```
+
+------------------------------------------------
 
 The following single panel plot shows 24-hour activity time courses for each day. It is evident that there is high activity around 11th hour on Sunday and between 19th and 21st hour on Friday. The lowest activity is between 0 and 5th hour. 
 
@@ -228,6 +295,11 @@ accel %>%
     name = "Day", 
     discrete = TRUE, 
     option = "viridis"
+  ) + 
+  labs(
+    x = "Hour",
+    y = "Total Activity", 
+    title = "24-hour activity time courses for each day"
   )
 ```
 
